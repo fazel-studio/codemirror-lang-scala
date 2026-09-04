@@ -1,0 +1,231 @@
+@top ScalaFile { (PackageClause | ImportClause | Definition | Scaladoc)* }
+
+@external tokens indent from "./tokens.js" { INDENT, DEDENT }
+@context trackIndent from "./tokens.js"
+
+@skip { space | LineComment | BlockComment }
+
+@tokens {
+  space { @whitespace }
+  LineComment { "//" ![\n]* }
+  BlockComment { "/*" (![] | "*" ![/])* "*/" }
+  ScaladocComment { "/**" (![] | "*" ![/] | "/" ![*])* "*/" }
+  Number {
+    "0x" $[0-9a-fA-F_]+ |
+    "0b" $[01_]+ |
+    $[0-9] $[0-9_]* ("." $[0-9_]+)? (("e" | "E") ("+" | "-")? $[0-9_]+)? ($[lLfFdD])?
+  }
+  String {
+    "\"\"\"" (![] | "\"" !["] | "\"\"" !["])* "\"\"\"" |
+    "\"" ( !["\\\n] | "\\" _ )* "\"" |
+    "'" ( !['\\\n] | "\\" _ )* "'"
+  }
+  InterpolatedString {
+    ("s" | "f" | "raw") "\"\"\"" (![] | "\"" !["] | "\"\"" !["])* "\"\"\"" |
+    ("s" | "f" | "raw") "\"" ( !["\n] | "\\" _ )* "\""
+  }
+  XmlLiteral {
+    "<" "/"? $[a-zA-Z_] $[a-zA-Z0-9._-]* (![>\n])* ">"
+  }
+  Identifier {
+    $[a-zA-Z_] $[a-zA-Z0-9_$]* | "`" (![`\n])* "`"
+  }
+  TypeIdentifier {
+    $[A-Z] $[a-zA-Z0-9_$]*
+  }
+  @precedence {
+    ScaladocComment, BlockComment, LineComment, "/", "*",
+    InterpolatedString, XmlLiteral, String, Number,
+    "_",
+    TypeIdentifier, Identifier
+  }
+}
+
+PackageClause { kw<"package"> QualId }
+
+ImportClause { kw<"import"> ImportExpr ("," ImportExpr)* }
+
+ImportExpr {
+  QualId ~import "." "*" |
+  QualId ~import "." kw<"given"> TypeIdentifier? |
+  QualId ~import "." "{" ImportSelectors "}" |
+  QualId ~import |
+  "*"
+}
+
+ImportSelectors { ImportSelector ("," ImportSelector)* ","? }
+
+ImportSelector {
+  kw<"given"> TypeIdentifier? |
+  Identifier kw<"as"> Identifier |
+  TypeIdentifier kw<"as"> TypeIdentifier |
+  Identifier |
+  TypeIdentifier |
+  "*"
+}
+
+QualId { (Identifier | TypeIdentifier) ("." (Identifier | TypeIdentifier))* ~import }
+
+Scaladoc { ScaladocComment }
+
+Annotation { "@" QualId (":" QualId)? ("(" AnnotationArgs? ")")? }
+
+AnnotationArgs { AnnotationArg ("," AnnotationArg)* ","? }
+
+AnnotationArg { Identifier "=" Expr | Expr }
+
+Definition { Annotation* Modifiers DefinitionBody }
+
+Modifiers { Modifier* }
+
+Modifier {
+  kw<"abstract"> | kw<"final"> | kw<"sealed"> | kw<"open"> |
+  kw<"private"> | kw<"protected"> | ModWithArg |
+  kw<"override"> | kw<"implicit"> | kw<"inline"> | kw<"transparent">
+}
+
+ModWithArg { (kw<"private"> | kw<"protected">) "[" (Identifier | kw<"this">) "]" }
+
+DefinitionBody {
+  ClassDefinition |
+  TraitDefinition |
+  ObjectDefinition |
+  EnumDefinition |
+  GivenDefinition |
+  ExtensionDefinition |
+  OpaqueTypeDefinition |
+  TypeDefinition |
+  ValDefinition |
+  VarDefinition |
+  DefDefinition |
+  ExportClause |
+  CaseClassDefinition |
+  CaseObjectDefinition
+}
+
+ClassDefinition { kw<"class"> TypeIdentifier TypeParams? ConstrParams? ExtendsClause? DerivesClause? TemplateBody? }
+CaseClassDefinition { kw<"case"> kw<"class"> TypeIdentifier TypeParams? ConstrParams? ExtendsClause? DerivesClause? TemplateBody? }
+TraitDefinition { kw<"trait"> TypeIdentifier TypeParams? ExtendsClause? DerivesClause? TemplateBody? }
+ObjectDefinition { kw<"object"> TypeIdentifier ExtendsClause? DerivesClause? TemplateBody? }
+CaseObjectDefinition { kw<"case"> kw<"object"> TypeIdentifier ExtendsClause? TemplateBody? }
+
+EnumDefinition { kw<"enum"> TypeIdentifier TypeParams? ConstrParams? ExtendsClause? EnumBody }
+EnumBody { "{" EnumBodyStat* "}" | ":" INDENT EnumBodyStat+ DEDENT | INDENT EnumBodyStat+ DEDENT }
+EnumBodyStat { EnumCase | Definition }
+EnumCase { Annotation* kw<"case"> TypeIdentifier ConstrParams? ExtendsClause? | Annotation* kw<"case"> (Identifier | TypeIdentifier) ("," (Identifier | TypeIdentifier))* }
+
+GivenDefinition { kw<"given"> GivenBody }
+GivenBody { TypeIdentifier TypeParams? ConstrParams? ExtendsClause? TemplateBody? | Identifier ":" Type "=" (Expr | IndentBlock) | Type "=" (Expr | IndentBlock) | Type }
+
+ExtensionDefinition { kw<"extension"> TypeParams? "(" Params ")" TemplateBody? | kw<"extension"> TypeParams? "(" Params ")" ":" Type TemplateBody? }
+OpaqueTypeDefinition { kw<"opaque"> kw<"type"> TypeIdentifier TypeParams? "=" Type }
+TypeDefinition { kw<"type"> TypeIdentifier TypeParams? TypeBounds? "=" Type }
+ValDefinition { kw<"lazy">? kw<"val"> Pattern (":" Type)? "=" (Expr | IndentBlock) }
+VarDefinition { kw<"var"> Pattern (":" Type)? "=" (Expr | IndentBlock) }
+DefDefinition { kw<"def"> Identifier TypeParams? ParamClauses (":" Type)? "=" (Expr | IndentBlock) | kw<"def"> Identifier TypeParams? ParamClauses (":" Type)? Block | kw<"def"> Identifier TypeParams? ParamClauses (":" Type)? }
+
+ExportClause { kw<"export"> ExportExpr }
+ExportExpr { QualId ("." "*" | "." "{" ExportSelectors "}" | "." Identifier)? }
+ExportSelectors { ExportSelector ("," ExportSelector)* ","? }
+ExportSelector { kw<"given"> TypeIdentifier? | Identifier kw<"as"> Identifier | Identifier | "*" }
+
+TypeParams { "[" TypeParam ("," TypeParam)* ","? "]" }
+TypeParam { ("+" | "-")? TypeIdentifier TypeBounds? | ("+" | "-")? Identifier TypeBounds? }
+TypeBounds { ("<:" Type)? (">:" Type)? }
+ConstrParams { "(" ConstrParam ("," ConstrParam)* ","? ")" }
+ConstrParam { Annotation* Modifiers (kw<"val"> | kw<"var">)? Identifier ":" Type ("=" Expr)? | Annotation* Type }
+ParamClauses { ParamClause* }
+ParamClause { "(" Params? ")" }
+Params { Param ("," Param)* ","? }
+Param { Annotation* kw<"implicit">? (kw<"val"> | kw<"var">)? Identifier ":" ParamType ("=" Expr)? | Annotation* Type }
+ParamType { Type | "=>" Type | Type "*" }
+ExtendsClause { kw<"extends"> Type ("," Type | kw<"with"> Type)* }
+DerivesClause { kw<"derives"> Type ("," Type)* }
+
+TemplateBody { "{" TemplateStat* "}" | ":" INDENT TemplateStat+ DEDENT | INDENT TemplateStat+ DEDENT }
+TemplateStat { ImportClause | Definition | Statement | Scaladoc }
+Statement { Expr | Scaladoc }
+
+Block { "{" BlockStat* "}" | ":" INDENT BlockStat+ DEDENT }
+IndentBlock { INDENT BlockStat+ DEDENT }
+BlockStat { ImportClause | Definition | Statement | Scaladoc }
+
+MatchBlock { "{" CaseClause* "}" | INDENT CaseClause+ DEDENT | ":" INDENT CaseClause+ DEDENT }
+CaseClause { kw<"case"> Pattern (kw<"if"> Expr)? "=>" (Expr | IndentBlock) }
+
+Type { UnionType }
+UnionType { IntersectionType ( "|" IntersectionType)* }
+IntersectionType { FunctionType ( "&" FunctionType)* }
+FunctionType {
+  FuncParamTypes "=>" Type |
+  FuncParamTypes "?=>" Type |
+  "[" TypeParam ("," TypeParam)* "]" "=>>" Type |
+  SimpleType
+}
+FuncParamTypes { "(" (ParamType ("," ParamType)* ","?)? ")" | SimpleType }
+SimpleType { TypeIdentifier TypeArgs? QualSuffix? | "(" Type ")" | "(" Type ("," Type)+ ")" | "_" }
+TypeArgs { "[" Type ("," Type)* ","? "]" }
+QualSuffix { "." TypeIdentifier TypeArgs? QualSuffix? }
+
+Pattern { PatternAlts }
+PatternAlts { PatternAtom ( "|" PatternAtom)* }
+PatternAtom {
+  Identifier "@" PatternAtom |
+  Identifier |
+  "_" |
+  Literal |
+  TypeIdentifier "(" Pattern ("," Pattern)* ","? ")" |
+  TypeIdentifier |
+  "(" Pattern ("," Pattern)* ","? ")"
+}
+
+Expr { IfExpr | WhileExpr | ForExpr | TryExpr | LambdaExpr | BinaryExpr }
+
+IfExpr { kw<"if"> "(" Expr ")" (Expr | IndentBlock) (kw<"else"> (Expr | IndentBlock))? | kw<"if"> Expr kw<"then"> (Expr | IndentBlock) (kw<"else"> (Expr | IndentBlock))? }
+WhileExpr { kw<"while"> "(" Expr ")" (Expr | IndentBlock) | kw<"while"> Expr kw<"do"> (Expr | IndentBlock) }
+ForExpr { kw<"for"> "(" Enumerators ")" (kw<"yield"> (Expr | IndentBlock) | (Expr | IndentBlock)) | kw<"for"> Enumerators kw<"do"> (Expr | IndentBlock) | kw<"for"> Enumerators kw<"yield"> (Expr | IndentBlock) }
+Enumerators { Enumerator (","? Enumerator)* }
+Enumerator { Pattern "<-" (Expr | IndentBlock) | Identifier "=" (Expr | IndentBlock) | kw<"val"> Pattern "=" (Expr | IndentBlock) | kw<"if"> Expr | Pattern "=" (Expr | IndentBlock) }
+TryExpr { kw<"try"> (Block | IndentBlock) (kw<"catch"> MatchBlock)? (kw<"finally"> (Block | IndentBlock))? }
+LambdaExpr { "(" Params ")" "=>" (Expr | IndentBlock | Block) | "(" Params ")" "=>" Block | Identifier "=>" (Expr | IndentBlock) | "{" CaseClause+ "}" }
+
+BinaryExpr { PostfixExpr (BinOp PostfixExpr)* }
+BinOp {
+  "=" | "=>" | "->" | "<-" | "==" | "!=" | "<=" | ">=" | "<" | ">" |
+  "+" | "-" | "*" | "/" | "%" | "&&" | "||"
+}
+
+PostfixExpr { PrimaryExpr PostfixSuffix* }
+
+PostfixSuffix {
+  "." Identifier TypeArgs? Args? |
+  TypeArgs |
+  Args |
+  Block |
+  kw<"match"> MatchBlock
+}
+
+PrimaryExpr {
+  Literal |
+  Identifier |
+  "_" |
+  kw<"this"> | kw<"super"> |
+  "(" Expr ")" |
+  "(" Expr ("," Expr)+ ")" |
+  Block |
+  NewExpr |
+  ThrowExpr |
+  ReturnExpr
+}
+
+Literal { Number | String | InterpolatedString | XmlLiteral | kw<"true"> | kw<"false"> | kw<"null"> }
+
+Args { "(" ArgList? ")" }
+ArgList { Arg ("," Arg)* ","? }
+Arg { Identifier "=" Expr | Expr }
+
+NewExpr { kw<"new"> Type Args? TemplateBody? | kw<"new"> Type "(" ArgList? ")" }
+ThrowExpr { kw<"throw"> Expr }
+ReturnExpr { kw<"return"> Expr? }
+
+kw<term> { @specialize[@name={term}]<Identifier, term> }

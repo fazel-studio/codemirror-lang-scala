@@ -1,0 +1,308 @@
+# package declaration
+package com.example.name
+==>
+ScalaFile(...)
+
+# import wildcard
+import a.b.*
+==>
+ScalaFile(...)
+
+# import alias
+import a.b.C as Alias
+==>
+ScalaFile(...)
+
+# import selective
+import a.b.{C, D}
+==>
+ScalaFile(...)
+
+# import given
+import a.b.{given, given C}
+==>
+ScalaFile(...)
+
+# class empty
+class Empty
+==>
+ScalaFile(...)
+
+# class with primary constructor
+class User(val id: Int)
+==>
+ScalaFile(...)
+
+# case class with default value
+case class User(id: Int, name: String = "a")
+==>
+ScalaFile(...)
+
+# trait with abstract and default
+trait MyTrait {
+  def foo: Int
+  def bar = 1
+}
+==>
+ScalaFile(...)
+
+# object singleton
+object Foo {
+  val x = 1
+}
+==>
+ScalaFile(...)
+
+# enum simple
+enum Color {
+  case Red, Green, Blue
+}
+==>
+ScalaFile(...)
+
+# enum parameterized
+enum Color(val rgb: Int) {
+  case Red extends Color(0xFF0000)
+}
+==>
+ScalaFile(...)
+
+# enum ADT
+enum Option[+T] {
+  case Some(x: T)
+  case None
+}
+==>
+ScalaFile(...)
+
+# sealed trait with subclass
+sealed trait Base
+class Derived extends Base
+==>
+ScalaFile(...)
+
+# given instance
+given ExecutionContext = scala.concurrent.ExecutionContext.global
+==>
+ScalaFile(...)
+
+# extension methods
+extension (s: String) {
+  def isValid: Boolean = true
+}
+==>
+ScalaFile(...)
+
+# opaque type
+opaque type UserId = Int
+==>
+ScalaFile(...)
+
+# export clauses
+export a.b.*
+==>
+ScalaFile(...)
+
+# generic variance and bounds
+class Box[+T <: Comparable[T]]
+==>
+ScalaFile(...)
+
+# union type
+type U = Int | String
+==>
+ScalaFile(...)
+
+# intersection type
+type I = A & B
+==>
+ScalaFile(...)
+
+# type lambda
+type TL = [X] =>> List[X]
+==>
+ScalaFile(...)
+
+# function with default param
+def greet(name: String = "World") = 1
+==>
+ScalaFile(...)
+
+# function with by-name param
+def log(msg: => String) = 1
+==>
+ScalaFile(...)
+
+# function with named arguments call
+val x = greet(name = "Scala")
+==>
+ScalaFile(...)
+
+# function with implicit param
+def process(implicit ctx: Context) = 1
+==>
+ScalaFile(...)
+
+# function single expression
+def square(x: Int) = x * x
+==>
+ScalaFile(...)
+
+# pattern matching
+val y = x match {
+  case User(id, name) => id
+  case y if y > 0 => y
+  case 1 | 2 | 3 => 3
+  case user @ User(_, _) => user
+}
+==>
+ScalaFile(...)
+
+# if as expression
+val x = if (true) 1 else 2
+==>
+ScalaFile(...)
+
+# while loop
+def testWhile = while (true) {
+  println(1)
+}
+==>
+ScalaFile(...)
+
+# for comprehension with yield
+val res = for (i <- List(1,2,3)) yield i
+==>
+ScalaFile(...)
+
+# for loop without yield
+def testFor = for (i <- List(1,2,3)) println(i)
+==>
+ScalaFile(...)
+
+# lambda expression
+val f = (x: Int) => x + 1
+==>
+ScalaFile(...)
+
+# lambda placeholder
+val g = List(1,2,3).map(_ * 2)
+==>
+ScalaFile(...)
+
+# case lambda
+val h = List(1,2,3).map({ case x => x + 1 })
+==>
+ScalaFile(...)
+
+# string interpolation simple
+val s = s"Hello, $name"
+==>
+ScalaFile(...)
+
+# string interpolation with expression
+val s2 = s"Hello, ${user.name}"
+==>
+ScalaFile(...)
+
+# multiline string
+val s = """hello
+world"""
+==>
+ScalaFile(...)
+
+# XML literal self-closing
+val xml = <br/>
+==>
+ScalaFile(...)
+
+# Scaladoc comment
+/**
+ * @param x the parameter
+ * @return the result
+ */
+def foo(x: Int) = x
+==>
+ScalaFile(...)
+
+# annotation without args
+@deprecated
+def old = 1
+==>
+ScalaFile(...)
+
+# annotation with args
+@Annotation(args)
+def foo = 1
+==>
+ScalaFile(...)
+
+# main annotation
+@main def run(): Unit = println("Hello")
+==>
+ScalaFile(...)
+
+# optional braces colon style
+class Foo:
+  def bar = 1
+  val x = 2
+==>
+ScalaFile(...)
+
+# generic vs comparison
+val a = 1
+val b = 2
+val x = a < b
+val list: List[Int] = Nil
+==>
+ScalaFile(...)
+
+# soft keyword as identifier with backticks
+val `given` = 1
+==>
+ScalaFile(...)
+
+# trailing comma
+def foo(a: Int, b: Int,) = 1
+val arr = List(1, 2, 3,)
+==>
+ScalaFile(...)
+
+# try catch finally
+val t = try {
+  1
+} catch {
+  case e: Exception => 2
+} finally {
+  3
+}
+==>
+ScalaFile(...)
+
+# throw expression
+def foo = throw new Exception("error")
+==>
+ScalaFile(...)
+
+# lazy val and var
+lazy val x = 1
+var y = 2
+val z = 3
+==>
+ScalaFile(...)
+
+# visibility private[this]
+private[this] val x = 1
+protected[this] var y = 2
+==>
+ScalaFile(...)
+
+# empty file
+==>
+ScalaFile()
+
+# comment only
+// line comment
+/* block comment */
+==>
+ScalaFile(...)
