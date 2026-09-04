@@ -14,6 +14,13 @@
 - Optional braces / significant indentation (brace-style and colon-style)
 - Syntax highlighting and indentation/folding
 
+## 0.1.4
+- Fix EOF dedent bug causing indentation-based blocks to incorrectly consume the entire rest of the file and break folding
+
+## 0.1.3
+- Update package.json metadata (organization, repository URL, author info)
+- Clean up test files and reorganize internal agent instruction modules
+
 ## 0.1.2
 - Fix grammar conflict causing aggressive parsing of indented blocks inside braced blocks
 - Fix folding arrows appearing on single-line expressions inside braced blocks
