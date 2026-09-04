@@ -17,17 +17,21 @@ export const trackIndent = new ContextTracker({
   start: top,
   shift(context, term, stack, input) {
     if (term == INDENT) {
-      // Calculate indent of the new line (already counted in tokenizer)
-      // input.pos is after the indent spaces, stack.pos is before
       let indent = 0
-      for (let i = stack.pos; i < input.pos; i++) {
-        let ch = input.get(i)
-        if (ch == space) indent++
-        else if (ch == tab) indent += 8 - (indent % 8)
+      let pos = stack.pos - 1
+      while (pos >= 0) {
+        let ch = input.read(pos, pos + 1).charCodeAt(0)
+        if (ch == 10 || ch == 13) break
+        pos--
       }
-      // If the indent token was accepted with chars, indent is that count
-      // For INDENT, we consumed the spaces, so count them
-      // For safety, recalculate if needed
+      pos++
+      // now pos is at the start of the line
+      while (pos < stack.pos) {
+        let ch = input.read(pos, pos + 1).charCodeAt(0)
+        if (ch == 32) indent++
+        else if (ch == 9) indent += 8 - (indent % 8)
+        pos++
+      }
       return new Context(context, indent)
     }
     if (term == DEDENT) {
@@ -39,6 +43,15 @@ export const trackIndent = new ContextTracker({
 })
 
 export const indent = new ExternalTokenizer((input, stack) => {
+  const cur = stack.context ? stack.context.indent : 0
+
+  if (input.next < 0 && cur > 0) {
+    if (stack.canShift(DEDENT)) {
+      input.acceptToken(DEDENT, 0)
+      return
+    }
+  }
+
   const prev = input.peek(-1)
   // Only check at start of line (after newline) or at start of file
   if (prev != newline && prev != carriageReturn && prev != -1) return
@@ -67,8 +80,6 @@ export const indent = new ExternalTokenizer((input, stack) => {
   if (input.next == 47 && input.peek(1) == 42) { // '/*'
     return
   }
-
-  const cur = stack.context ? stack.context.indent : 0
 
   if (indent > cur) {
     // Only emit INDENT if we can shift it
